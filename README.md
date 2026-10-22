@@ -66,7 +66,7 @@ site-kastle/
 
 ## Pré-requisitos
 
-- **Node.js** 18.18+ (recomendado Node 20 LTS)
+- **Node.js** 22 ou superior
 - **npm**, **yarn**, **pnpm** ou **bun**
 
 ## Como executar
@@ -90,6 +90,13 @@ npm run build
 npm run start
 ```
 
+Para testar e publicar no Cloudflare Workers:
+
+```bash
+npm run preview
+npm run deploy
+```
+
 ## Variáveis de ambiente
 
 Crie um arquivo `.env.local` na raiz de `site-kastle/` com as variáveis abaixo. Elas são usadas pelo endpoint de contato (`app/api/contact/route.js`) e pelo Google Analytics (`app/layout.tsx`).
@@ -108,6 +115,7 @@ NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
 Observações:
 
 - A porta `465` usa TLS implícito; `587` usa STARTTLS. O código define `secure` automaticamente com base na porta.
+- No Cloudflare Workers, configure uma porta SMTP suportada pelo provedor, como `465` ou `587` (a porta `25` não é permitida para conexões TCP de saída).
 - Para o Gmail, utilize uma **Senha de App** (não a senha da conta).
 - Se `NEXT_PUBLIC_GA_ID` não estiver definida, o componente do GA simplesmente não é renderizado.
 
@@ -118,7 +126,30 @@ Observações:
 | `npm run dev` | Sobe o servidor de desenvolvimento em `localhost:3000`. |
 | `npm run build` | Gera o build de produção. |
 | `npm run start` | Inicia o servidor em produção (após o build). |
+| `npm run preview` | Gera o bundle OpenNext e executa uma prévia no runtime local do Workers. |
+| `npm run deploy` | Gera o bundle OpenNext e publica no Cloudflare Workers. |
+| `npm run upload` | Envia uma nova versão do Worker sem ativá-la. |
 | `npm run lint` | Executa o ESLint. |
+
+## Deploy no Cloudflare Workers
+
+O workflow `.github/workflows/deploy-production.yml` executa lint, verificação TypeScript e deploy em cada push para `main`. Também pode ser iniciado manualmente em GitHub → Actions → Deploy production.
+
+Configure os secrets no repositório GitHub em **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_API_TOKEN`: token de deploy específico para este projeto, com permissão de publicar Workers na conta Cloudflare correta.
+- `CLOUDFLARE_ACCOUNT_ID`: Account ID da conta Cloudflare onde o Worker será publicado.
+
+Depois do primeiro deploy, abra **Cloudflare → Workers & Pages → `site-kastle` → Settings → Variables and Secrets** e adicione as variáveis de runtime:
+
+| Nome | Tipo |
+| --- | --- |
+| `SMTP_HOST` | Variable |
+| `SMTP_PORT` | Variable (`465` ou `587`) |
+| `SMTP_USER` | Secret |
+| `SMTP_PASSWORD` | Secret |
+
+O `SMTP_USER` também é usado como endereço destinatário. Nunca inclua credenciais SMTP ou o token da Cloudflare no repositório. Para habilitar o Google Analytics em produção, adicione `NEXT_PUBLIC_GA_ID` em **Settings → Secrets and variables → Actions → Variables** no GitHub; o workflow a injeta durante o build.
 
 ## Funcionalidades
 
